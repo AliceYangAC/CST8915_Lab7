@@ -2,7 +2,7 @@
 
 ## Demo Video
 
-[Youtube Link](https://youtu.be/0Td0Mz7rnXg)
+[Youtube Link](https://youtu.be/KTlrlOF1WQw)
 
 ## Rabbit MQ: Configuration Analysis
 
