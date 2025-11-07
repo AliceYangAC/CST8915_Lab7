@@ -2,13 +2,15 @@
 
 ## Demo Video
 
-[Youtube Link](https://youtu.be/N3EQVOxSIR8)
+[Youtube Link](https://youtu.be/2NRcp3Y26Ck)
 
 ## Rabbit MQ: Configuration Analysis
 
 ### 1. Whether RabbitMQ is a stateless or stateful application
 
-In the demo, when I scaled `rabbitmq` up to 2 pods using the command `kubectl scale deployment rabbitmq --replicas=2`, RabbitMQ Management threw a `502 Bad Gateway` Nginx ingress error. This is likely because the service now points to a new pod that does not have the expected state or queue for the two orders I had placed up until that point, or tries to send traffic to the new pods before the pod is in a ready state yet. Our owned RabbitMQ service is thus stateful, where the queue and its messages exist within our first pod's memory, but not within any new pods spun up after the orders had been placed. New or recreated nodes will not have their persisted data and will start as blank nodes. Each pod is isolated from each other, so the management UI breaks when it fails to reconcile a consistent state between the pods. 
+In the demo, I first fired off 3 orders on the one pod; RabbitMQ performs as expected, listening to the new order posts and adding them as messages to the queue. Then, I scaled `rabbitmq` up to 5 pod replicas using the command `kubectl scale deployment rabbitmq --replicas=5`, and fired off many more orders. First of all, the registered number of messages/connections became inconsistent on each refresh; it appears as if RabbitMQ cannot consistently synchronize the data in the multiple replica pods to keep track of messages across all of them. In addition, when I restarted pods by deleting them (as is normal for cluster health purposes), the numbers decreased as well, meaning that messages are lost on pod restart. Finally, when I spun the replicas back down to 1, the number of messages/connections also decreased because the remaining pod was not the original pod from the beginning, meaning that RabbitMQ lost any messages stored as data on the other replica pods.
+
+All of these persistence issues thus demonstrate that owned RabbitMQ service is stateful, where the queue and its messages exist within one pod's memory, but not within any other pods spun up after the orders had been placed nor within the same pod if it is restarted. New or recreated nodes will not have their persisted data and will start as blank nodes. Each pod is isolated from each other, so the management UI fails to reconcile a consistent state between the pods when it refreshes.
 
 ### 2. The implications of running RabbitMQ without persistent storage
 
